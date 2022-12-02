@@ -20,12 +20,8 @@ The repository with documentation of experiments, data and results for the GeneM
 
 ### GeneMark-ETP pipeline
 
-GeneMark-ETP pipeline is distributed under ... license.
-
-### GeneMark.hmm
-
-GeneMarkS-2+ is distributed as part of GeneMark-ETP with limited rights of use and redistribution
-from the Georgia Tech Research Corporation. See the [full text of the license] (GeneMarkS_Software_License.txt).
+GeneMark-ETP is distributed with limited rights of use and redistribution
+from the Georgia Tech. See the [full text of the license](GeneMark_Software_License.txt).
 
 ### Third-party tools
 
