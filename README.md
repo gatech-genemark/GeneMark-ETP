@@ -10,7 +10,8 @@ publication in preparation 2022
 Georgia Institute of Technology, Atlanta, Georgia, USA  
 
 ## Experiments
-Project with experiments and evaluation of GeneMark-ETP is available at https://github.com/gatech-genemark/GeneMark-ETP-exp
+
+The repository with documentation of experiments, data and results for the GeneMark-ETP project is available at https://github.com/gatech-genemark/GeneMark-ETP
 
 ## Instructions
 
