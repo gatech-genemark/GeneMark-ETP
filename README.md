@@ -11,7 +11,7 @@ Georgia Institute of Technology, Atlanta, Georgia, USA
 
 ## Experiments
 
-The repository with documentation of experiments, data and results for the GeneMark-ETP project is available at https://github.com/gatech-genemark/GeneMark-ETP
+The repository with documentation of experiments, data and results for the GeneMark-ETP project is available at https://github.com/gatech-genemark/GeneMark-ETP-exp
 
 ## Instructions
 
