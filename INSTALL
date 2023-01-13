@@ -26,10 +26,14 @@ Software was compiled with static library linking and should work on many LINUX 
 
 ## THIRD PARTY TOOLS expected in default path -----------
 wget
+  Required with some input files.
   User may provide a link to WWW resource in species configuration file, for example path to genome file at GenBank.
   In such case genome will be downloaded using "wget" command. 
   "wget" is not required, when input files are located on local computer system
-  
+scp
+  Required with some input files.
+gunzip
+  Required with some input files.
 
 ## Test ETP installation
 
