@@ -1,0 +1,67 @@
+#================================================
+# Copyright Georgia Institute of Technology, Atlanta, Georgia, USA
+# Distributed by GeneProbe Inc., Atlanta, Georgia, USA
+#================================================
+
+Installation instructions for GeneMark* software
+
+a. Copy the content of distribution to desired location.
+b. Install the key: copy key "gm_key" into users home directory as:
+
+  gunzip gm_key.gz
+
+  cp gm_key ~/.gm_key
+
+Program is ready for execution.
+
+Perl scripts are configured with default Perl location at "/usr/bin/perl".
+Default path to Perl can be changed by script "perl change_path_in_perl_scripts.pl" 
+from GeneMark* distribution folder.
+
+The following Perl modules are required:
+   YAML
+   Hash::Merge
+   Parallel::ForkManager
+   MCE::Mutex
+   Thread::Queue
+   threads
+   Math::Utils
+
+Perl libraries should be at minimum:
+
+MCE to version 1.8
+Parallel::ForkManager to version 2
+Thread::Queue version 3
+
+To get the Perl library versions run:
+
+perl -MMCE -e 'print $MCE::VERSION ."\n";'
+perl -MParallel::ForkManager -e 'print $Parallel::ForkManager::VERSION ."\n";'
+perl -MThread::Queue -e 'print $Thread::Queue::VERSION ."\n";'
+
+If some of the Perl modules are missing, then modules can be installed from CPAN 
+or other method available on your platform.
+
+For example:
+  see https://www.cpan.org/modules/INSTALL.html
+  cpan App::cpanminus
+  cpanm YAML
+or
+  AWS or RedHat
+  yum search YAML
+  yum install YAML*  # replace with full name from search
+or
+  UBUNTU
+  apt search YAML
+  apt install YAML*  # replace with full name from search
+
+Code was tested on Perl 5.10 or higher.
+Python 3.3 or higher is required for GeneMark-EP run mode.
+
+To check completeness of installation, run script "check_install.bash"
+
+To verify that the entire software is working correctly, 
+run a test example in GeneMark-E-tests folder.
+
+#================================================
+
