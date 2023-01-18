@@ -934,6 +934,7 @@ sub MapRNASeq
 {
 	print "\n### map RNA-Seq\n" if $verbose;
 
+	MkDir("$workdir/rnaseq");
 	ChDir("$workdir/rnaseq");
 	MkDir("$workdir/rnaseq/hisat2");
 	ChDir("$workdir/rnaseq/hisat2");
@@ -1224,7 +1225,7 @@ sub PrepareGenome
 
 	if ( CreateThis( "../data/genome.fasta" ))
 	{
-		system( "$bin/probuild --reformat_fasta --in $fname --out ../data/genome.fasta i          --uppercase 1 --letters_per_line 60 --include_sid chr.names --first_w --swap_sid" ) and die "error on probuild in PrepareGenome\n";
+		system( "$bin/probuild --reformat_fasta --in $fname --out ../data/genome.fasta --uppercase 1 --letters_per_line 60 --include_sid chr.names --first_w --swap_sid" ) and die "error on probuild in PrepareGenome\n";
 	}
 
 	if ($softmask and CreateThis( "../data/genome.softmasked.fasta" ))
