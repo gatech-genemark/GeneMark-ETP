@@ -15,6 +15,12 @@ The repository with documentation of experiments, data and results for the GeneM
 
 ## Instructions
 
+Usage:
+```
+gmetp.pl --cores 32 --cfg input.cfg
+```
+Examples of input configuration files can be found in 
+ttps://github.com/gatech-genemark/GeneMark-ETP-exp
 
 ## Software license
 
