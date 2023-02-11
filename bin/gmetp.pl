@@ -1033,6 +1033,7 @@ sub MapRNASeq
 {
 	print "### map RNA-Seq\n" if $verbose;
 
+	MkDir("$workdir/rnaseq");
 	ChDir("$workdir/rnaseq");
 	MkDir("$workdir/rnaseq/hisat2");
 	ChDir("$workdir/rnaseq/hisat2");
