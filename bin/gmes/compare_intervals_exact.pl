@@ -629,7 +629,12 @@ sub PrintKeys
 		}
 		else
 		{
-			 print $OUT  PrintOriginal( $key, $original ); # ."\n";
+			my $txt = PrintOriginal( $key, $original );
+			if ( $txt !~ /\n$/ )
+			{
+				$txt .= "\n";
+			}
+			print $OUT $txt;
 		}
 	}
 
