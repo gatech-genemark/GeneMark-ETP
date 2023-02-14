@@ -1450,18 +1450,33 @@ sub SetChrNames
 			my $seqid = '';
 			my $chrid = '';
 
-			if ( $paper and /mitochondrion|chloroplast|apicoplast|^>NW_/ )
+			if ( $paper ) 
 			{
-				print "warning, excluded FASTA record with defline: $_" if $warnings;
-				next;
-			}
+				if ( /mitochondrion|chloroplast|apicoplast|^>NW_/ )
+				{
+					print "warning, excluded FASTA record with defline: $_" if $warnings;
+					next;
+				}
 
-			if ($paper and (( /^>(N[CT]_\S+) .* chromosome\s+(\S+)/ and !/Mus musculus/ )or( /^>(NC_\S+) .* chromosome\s+(\S+)/ and /Mus musculus/ )))
-			{
-				$seqid = $1;
-				$chrid = $2;
+				if ( !/Mus musculus/ and /^>(N[CT]_\S+) .* chromosome\s+(\S+)/ )
+				{
+					$seqid = $1;
+					$chrid = $2;
 
-				$chrid =~ s/,$//;
+					$chrid =~ s/,$//;
+				}
+				elsif ( /Mus musculus/ and /^>(NC_\S+) .* chromosome\s+(\S+)/ )
+				{
+					$seqid = $1;
+					$chrid = $2;
+
+					$chrid =~ s/,$//;
+				}
+				else
+				{
+					print "warning, excluded FASTA record with defline: $_" if $warnings;
+					next;
+				}
 			}
 			elsif ( /^>\s*(\S+)\s*/ )
 			{
