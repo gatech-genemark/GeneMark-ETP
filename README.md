@@ -28,6 +28,8 @@ ttps://github.com/gatech-genemark/GeneMark-ETP-exp
 
 GeneMark-ETP is distributed with limited rights of use and redistribution
 from the Georgia Tech. See the [full text of the license](GeneMark_Software_License.txt).
+Download the license key file from here:
+http://topaz.gatech.edu/GeneMark/license_download.cgi
 
 ### Third-party tools
 
