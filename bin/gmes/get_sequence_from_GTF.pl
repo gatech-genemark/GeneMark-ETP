@@ -84,8 +84,11 @@ sub ReadGTF
     }
     else
     {
-      if ( /^\s+$/ ) { next };
-      if ( /^#/ ) { next };
+      next if /^\s+$/;
+      next if /^#/;
+      next if /\tgene\t/;
+      next if /\ttranscript\t/;
+
       die( "error in file format GTF: $_\n" );
     }
   }
