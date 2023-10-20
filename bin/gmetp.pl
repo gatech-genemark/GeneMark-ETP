@@ -24,9 +24,10 @@ use FindBin qw($Bin);
 use Getopt::Long qw(GetOptions);
 use Cwd qw(abs_path);
 use YAML::XS qw(LoadFile);
+use Parallel::ForkManager;
 use Data::Dumper;
 
-my $version = "1.00";
+my $version = "1.01";
 
 # -------------
 my $bin = $Bin;          # folder with ETP code
@@ -36,18 +37,18 @@ my $workdir = '.';       # working folder for whole ETP run
 
 my $proc = '';           # name of working folders for protein DB related steps
                          # some of the ETP testing was done using the same RNA-Seq input and different protein DB inputs
-                         # to accommodate such testing mode, shared RNA-Seq part was reused,
+                         # to accommodate such testing mode, the shared RNA-Seq part was reused,
                          # while all protein DB related steps were executed in "$proc" folders
-                         # by default "$proc" is initialized from protein DB name "$protdb_name"
+                         # by default, "$proc" is initialized from protein DB name "$protdb_name"
 my $protdb_name = '';    # is initialized from $protdb_path
 
 my $gc = 0;              # "1" - run ETP in GC heterogeneous mode; "0" - homogeneous mode
 my $bp = 0;              # "1" - run ETP in fungi mode; "0" - default general eukaryotic mode
 
 my $extend = 1;          # "1" - run ETP with extended training (iterations); "0" - no iterations
-my $paper = 0;           # "1" - parse input data following rules described in publication
+my $paper = 0;           # "1" - parse input data following rules described in the ETP publication
 
-my $penalty;             # if variable is "undefined", then run ETP in masking penalty estimation mode
+my $penalty;             # if the variable is "undefined", then run ETP in masking penalty estimation mode
 
 my $local = '';          # input data processing modifier
 my $bam = '';            # input data processing modifier
@@ -81,7 +82,7 @@ InitTrainCfg();          # this part of the code should be improved
 
 Usage() if ( @ARGV < 1 );
 ParseCMD();
-CheckIntalation() if $debug;
+CheckInstallation() if $debug;
 LoadConfig($cfg);
 ReportConfig($cfg) if $debug;
 Start() if $verbose;
@@ -91,14 +92,10 @@ if (!$softmask)
 {
 	MaskGenome($RepeatMasker_path) if 1;
 }
-if (!defined $penalty)
-{
-	# 50,000 - minimum number of masked letter to run repeat penalty estimation
-	CheckRepeatsMasked(50000) if 1;
-}
 PrepareProteinDBFile($protdb_path) if 1;
 # must run
 ($proc, $protdb_name) = SetTrainingPredictionFolder( $protdb_path, $proc );
+
 if (!$bam)
 {
 	PrepareRNASeq() if 1;
@@ -107,7 +104,7 @@ MapRNASeq()         if 1;
 AssembleTrans()     if 1;
 CreateIntronHints() if 1;
 GeneMarkST()        if 1;
-RunProtHintOnGMST($proc)          if 1;
+RunProtHintOnGMST($proc,$protdb_name) if 1;
 FilterGMST( $protdb_name, $proc ) if 1;
 
 my $hcc_genes      = "$workdir/rnaseq/hints/$proc/complete.gtf";
@@ -129,6 +126,12 @@ else
 	TrainModel($proc)   if 1;
 }
 
+if (!defined $penalty)
+{
+	# minimum number of masked letter to run repeat penalty estimation
+	my $MIN_FRACTION_MASKED = 0.01;
+	$penalty = CheckMasked($MIN_FRACTION_MASKED) if 1;
+}
 if ( ! defined $penalty )
 {
 	EstinateMaskingPenalty($proc) if 1;
@@ -519,6 +522,7 @@ sub LoadPenaltyFromFile
 sub RunProtHintOnGMST
 {
 	my $name = shift;
+	my $pfile = shift;
 
 	print "### generate ProtHint predictions with GeneMarkS-T seeds\n" if $verbose;
 
@@ -528,9 +532,11 @@ sub RunProtHintOnGMST
 	MkDir("$workdir/rnaseq/hints/$name/prothint");
 	ChDir("$workdir/rnaseq/hints/$name/prothint");
 
+	StopIfNotFound("$workdir/data/$pfile");
+
 	if ( CreateThis("evidence.gff") or CreateThis("prothint.gff") )
 	{
-		system( "$bin/gmes/ProtHint/bin/prothint.py --geneSeeds $workdir/rnaseq/gmst/genome_gmst.gtf $workdir/data/genome.fasta $workdir/data/$name --longGene 30000000 --longProtein 15000000 2> $workdir/prothint_gmst.log" );
+		system( "$bin/gmes/ProtHint/bin/prothint.py --geneSeeds $workdir/rnaseq/gmst/genome_gmst.gtf $workdir/data/genome.fasta $workdir/data/$pfile --longGene 30000000 --longProtein 15000000 2> $workdir/prothint_gmst.log" );
 		StopIfNotFound("evidence.gff");
 		StopIfNotFound("prothint.gff");
 	}
@@ -659,7 +665,7 @@ sub ParseCMD
 	);
 
 	die "error on command line\n" if( !$opt_results );
-	die "error, unexpected argument found on command line: $ARGV[0]\n" if( @ARGV > 0 );
+	die "error, unexpected argument found on the command line: $ARGV[0]\n" if( @ARGV > 0 );
 
 	$verbose = 1 if $debug;
 	$warnings = 1 if $debug;
@@ -672,11 +678,16 @@ sub ParseCMD
 	die "error, --workdir is not set\n" if !$workdir;
 	StopIfNotFound($workdir);
 	$workdir = abs_path($workdir);
-	die "error, working directory must differ from installation directory: $workdir\n" if ( $bin eq $workdir);
+	die "error, working directory must differ from ETP installation directory: $workdir\n" if ( $bin eq $workdir);
 
 	if ($proc)
 	{
 		die "error, --proc option must be a folder name, not a path: $proc\n" if ( $proc =~ /\// );
+		die "error, white space is not allowed in --proc option: $proc\n" if ( $proc =~ /\s/ );
+
+		my %reserved = ( "data"=>"1", "arx"=>"1", "rnaseq"=>"1", "prothint_gmst.log"=>"1", "filter_gmst.log"=>"1", "genemark.gtf"=>"1", "genemark_supported.gtf"=>"1" );
+		if ( exists $reserved{$proc} )
+			{ die "error, option --proc is matching the reserved word\n"; }
 	}
 
 	if ($local)
@@ -903,6 +914,7 @@ sub CreateIntronHints
 
 	if ( CreateThis("hintsfile_merged.gff") )
 	{
+		my $manager = new Parallel::ForkManager( $cores );
 		foreach my $set ( @rnaseq_sets )
 		{
 			print "# working on $set\n" if $verbose;
@@ -913,9 +925,12 @@ sub CreateIntronHints
 			if ( CreateThis($out_hints) )
 			{
 				StopIfNotFound($in_bam);
+				$manager->start and next;
 				system("$bin/bam2hints --intronsonly --in=$in_bam --out=$out_hints");
+				$manager->finish;
 			}
 		}
+		$manager->wait_all_children;
 
 		if ( CreateThis("bam2hints_merged.gff") )
 		{
@@ -1064,7 +1079,7 @@ sub MapRNASeq
 		{
 			if ($bam)
 			{
-				system( "ln -s $bam/$set.bam $out_bam" );
+				system( "ln", "-sf", "$bam/$set.bam", "$out_bam" );
 				print "# using BAM file $bam/$set.bam\n" if $verbose;
 			}
 			else
@@ -1101,7 +1116,8 @@ sub MapRNASeq
 			print "# reusing BAM file $out_bam\n" if $verbose;
 		}
 
-		if ( $clean and -e $out_sam ) { unlink $out_sam or die "error on delete file: $out_sam $!\n"; }
+		if ( $clean and -e $out_sam and -e $out_bam) 
+			{ unlink $out_sam or die "error on delete file: $out_sam $!\n"; }
 	}
 
 	print "### map RNA-Seq ... done\n\n" if $verbose;
@@ -1132,12 +1148,12 @@ sub PrepareRNASeq
 			{
 				if ( -e "$local/$R1" and -e "$local/$R2" )
 				{
-					system( "ln -s $local/$R1" );
-					system( "ln -s $local/$R2" );
+					system( "ln", "-sf", "$local/$R1" );
+					system( "ln", "-sf", "$local/$R2" );
 				}
 				elsif ( -e "$local/$R" )
 				{
-					system( "ln -s $local/$R" );
+					system( "ln", "-sf", "$local/$R" );
 				}
 				else
 					{ die "error, RNA-seq FASTQ file/s for library $set is not found at $local\n"; }
@@ -1146,9 +1162,9 @@ sub PrepareRNASeq
 			{
 				if ( CreateThis($sra) )
 				{
-					# 35G - is maximum allowed size of RNA-Seq SRA file to download
+					# 50G - is maximum allowed size of RNA-Seq SRA file to download
 					# increase it for large SRA files
-					system( "prefetch --max-size 35G $set" );
+					system( "prefetch --max-size 50G $set" );
 				}
 				else
 				{
@@ -1184,17 +1200,22 @@ sub MaskGenome
 
 	if (!$fpath)
 	{
-		system("touch ../data/repeats.gff");
-		print "warning, no masking information was provided\n" if $verbose;
+		system( "touch ../data/repeats.gff" );
+		print "# warning, no masking information was provided\n" if $verbose;
 	}
 	else
 	{
-		my $fname = FileFromPath($fpath);
-
-		if ( CreateThis( "../data/repeats.gff" ))
+		if ( CreateThis( "../data/repeats.gff" ) )
 		{
+			my $fname = FileFromPath($fpath);
 			RepeatMaskerOutputToGFF( $fname, "../data/repeats.gff" );
 			print "# repeat masking coordinates parsed from: $fname\n" if $verbose;
+
+			if ($clean and ( -e $fname ))
+			{
+				unlink $fname;
+				print "# removed file $fname\n" if $verbose;
+			}
 		}
 		else
 		{
@@ -1204,15 +1225,24 @@ sub MaskGenome
 
 	ChDir("$workdir/data");
 
-	if ( CreateThis( "genome.softmasked.fasta" ))
+	StopIfNotFound( "genome.fasta" );
+
+	if (!$fpath)
 	{
-		StopIfNotFound( "genome.fasta" );
-		system("bedtools maskfasta -fi genome.fasta -bed repeats.gff -fo genome.softmasked.fasta -soft")
-		and die "error on bedtools maskfasta\n";
+		system( "ln", "-sf", "genome.fasta", "genome.softmasked.fasta" );
+		print "# warning, no softmasking in file genome.softmasked.fasta\n" if $verbose;
 	}
 	else
 	{
-		print "# reusing genome.softmasked.fasta\n" if $verbose;
+		if ( CreateThis( "genome.softmasked.fasta" ))
+		{
+			system("bedtools maskfasta -fi genome.fasta -bed repeats.gff -fo genome.softmasked.fasta -soft")
+			and die "error on bedtools maskfasta\n";
+		}
+		else
+		{
+			print "# reusing genome.softmasked.fasta\n" if $verbose;
+		}
 	}
 
 	StopIfNotFound( "genome.softmasked.fasta" );
@@ -1220,9 +1250,11 @@ sub MaskGenome
 	print "### mask genome ... done\n\n" if $verbose;
 }
 # -------------
-sub CheckRepeatsMasked
+sub CheckMasked
 {
 	my $MIN_RM = shift;
+
+	my $value;
 
 	print "### check genome masking\n" if $verbose;
 
@@ -1230,6 +1262,8 @@ sub CheckRepeatsMasked
 
 	my $count_lower_case = 0;
 	my $count_upper_case = 0;
+
+	StopIfNotFound( "genome.softmasked.fasta" );
 
 	my $txt = `$bin/probuild --stat --details --seq genome.softmasked.fasta`;
 
@@ -1245,17 +1279,21 @@ sub CheckRepeatsMasked
 	}
 	else { die "error in the code CheckRepeatsMasked\n"; }
 
-	if ( $count_lower_case < $MIN_RM )
+	my $ratio = $count_lower_case/($count_upper_case + $count_lower_case);
+
+	if ( $ratio < $MIN_RM )
 	{
-		$penalty = 0.03;
-		print "# bases masked $count_lower_case is below threshold $MIN_RM\n" if $verbose;
-		print "# repeat penalty is set to: $penalty\n" if $verbose;
+		$value = 0.03;
+		print "# bases masked $ratio is below threshold $MIN_RM\n" if $verbose;
+		print "# repeat penalty is set to: $value\n" if $verbose;
 	}
 
-	print "# bases ATCG masked $count_lower_case, bases ATCG no masking $count_upper_case\n" if $verbose;
-	print "# bases masked % ". sprintf("%.1f", 100.0*$count_lower_case/($count_lower_case + $count_upper_case) ) ."\n" if $verbose;
+	print "# bases atcg masked $count_lower_case, bases ATCG no masking $count_upper_case\n" if $verbose;
+	print "# bases masked % ". sprintf("%.1f", 100.0*$ratio ) ."\n" if $verbose;
 
 	print "### check genome masking ... done\n\n" if $verbose;
+
+	return $value;
 }
 # -------------
 sub RepeatMaskerOutputToGFF
@@ -1369,11 +1407,23 @@ sub PrepareGenome
 	MkDir("$workdir/arx");
 	ChDir("$workdir/arx");
 
-	my $fname = FileFromPath($fpath);
+	my $fname = '';
 
-	SetChrNames( $fname, "chr.names" ) if ( CreateThis( "chr.names" ));
+	if (CreateThis( "chr.names" ) or CreateThis( "../data/genome.fasta" ) or ( $softmask and CreateThis( "../data/genome.softmasked.fasta" )))
+	{
+		$fname = FileFromPath($fpath);
+	}
 
-	if ( CreateThis( "../data/genome.fasta" ))
+	if ( CreateThis( "chr.names" ) )
+	{
+		 SetChrNames( $fname, "chr.names" );
+	}
+	else
+	{
+		print "# reusing file 'chr.names'\n" if $verbose;
+	}
+
+	if ( CreateThis( "../data/genome.fasta" ) )
 	{
 		system( "$bin/probuild --reformat_fasta --in $fname --out ../data/genome.fasta --uppercase 1 --letters_per_line 60 --include_sid chr.names --first_w --swap_sid" )
                 and die "error on probuild in PrepareGenome\n";
@@ -1388,7 +1438,7 @@ sub PrepareGenome
 
 	if ($softmask)
 	{
-		if( CreateThis( "../data/genome.softmasked.fasta" ))
+		if( CreateThis( "../data/genome.softmasked.fasta" ) )
 		{
 			system( "$bin/probuild --reformat_fasta --in $fname --out ../data/genome.softmasked.fasta --uppercase 0 --letters_per_line 60 --include_sid chr.names --first_w --swap_sid" )
                         and die "error on probuild in PrepareGenome\n";;
@@ -1401,6 +1451,12 @@ sub PrepareGenome
 			print "# reusing file 'data/genome.softmasked.fasta'\n" if $verbose;
 		}
 	} 
+
+	if ( $clean and ( -e $fname ))
+	{
+		unlink $fname;
+		print "# removed file $fname\n" if $verbose;
+	}
 
 	print "### prepare genome ... done\n\n" if $verbose;
 }
@@ -1525,23 +1581,23 @@ sub FileFromPath
 
 	print "# loading file name from: $fpath\n" if $verbose;
 
-	# '.gz' is excluded from file name
+	# extention '.gz' is excluded from file name
 	my $fname = GetFileNameFromPathName($fpath);
 
 	if ( $force or (! -e "$fname"))
 	{
-		if ( -e $fpath ) # if file is on local system
+		if ( -e $fpath ) # if file is on local system - this should be absolute path
 		{
 			if ( $force or ( ! -e "$fname.gz" and ! -e $fname ))
 			{
-				system( "cp", $fpath, "./" );
+				system( "cp", $fpath, "./" ) and die "error on copy file from path\n";
 			}
 		}
 		elsif ( $fpath =~ /^https:\/\// or $fpath =~ /^http:\/\// or $fpath =~ /^ftp:\/\// )
 		{
 			if ( $force or ( ! -e "$fname.gz" and ! -e $fname ))
 			{
-				system( "wget", "-q", $fpath ) and die "error on wget\n";
+				system( "wget", "-q", $fpath ) and die "error on wget file from path\n";
 			}
 		}
 		elsif ( $fpath =~ /^(\S+)@/ )
@@ -1586,7 +1642,7 @@ sub StopIfNotFound
 	my $fname = shift;
 
 	die "error, file/forder name is empty\n" if !$fname;
-    die "error, file/folder not found: ". $fname ."\n" if ( ! -e $fname );
+	die "error, file/folder not found: $fname\n" if ( ! -e $fname );
 }
 # -------------
 sub MkDir
@@ -2314,10 +2370,10 @@ sub JoinFasta
 	close $OUT;
 }
 # -------------
-# Coding of this "sub" was not finished
-# "sub" should check for valid install for all scripts called from this code
+# The coding of this "sub" was not finished.
+# "Sub" should check all scripts and libs called from this package.
 # -------------
-sub CheckIntalation
+sub CheckInstallation
 {
 	print "### Checking ETP installation\n";
 	print "# Checking Perl setup\n";
@@ -2327,7 +2383,7 @@ sub CheckIntalation
 	# cpanm YAML::XS
 	# ...
 
-	# Here we are checking for dependencies
+	# Here we are checking for Perl dependencies
 	my @modules = ( "YAML::XS", "MCE::Mutex", "Thread::Queue", "Math::Utils", "Hash::Merge", "Parallel::ForkManager" );
 
 	foreach my $module (@modules)
