@@ -1863,10 +1863,15 @@ sub Combine
 
 	if (!$gc)
 	{
+		StopIfNotFound("pred_m/genemark.gtf");
 		system("$bin/format_back.pl  pred_m/genemark.gtf  nonhc.trace  > nonhc.gtf");
 	}
 	else
 	{
+		StopIfNotFound("pred_m_low/genemark.gtf");
+		StopIfNotFound("pred_m_medium/genemark.gtf");
+		StopIfNotFound("pred_m_high/genemark.gtf");
+
 		system("$bin/format_back.pl pred_m_low/genemark.gtf     nonhc.trace | sed 's/_g/_gL/' | sed 's/_t/_tL/'  > low.gtf");
 		system("$bin/format_back.pl pred_m_medium/genemark.gtf  nonhc.trace | sed 's/_g/_gM/' | sed 's/_t/_tM/'  > medium.gtf");
 		system("$bin/format_back.pl pred_m_high/genemark.gtf    nonhc.trace | sed 's/_g/_gH/' | sed 's/_t/_tH/'  > high.gtf");
@@ -2126,6 +2131,8 @@ sub TrainModel
 		}
 	}
 
+	StopIfNotFound("$workdir/$wd/model/output.mod");
+
 	$train_cfg{"model"} = "$workdir/$wd/model/output.mod";
 
 	print "### training ab initio parameters ... done\n\n" if $verbose;
@@ -2193,6 +2200,10 @@ sub TrainModelGC
 		system( "$bin/select_by_transcript_id_from_gtf.pl training.list genes.gtf training.gtf" );
 		system( "$bin/train_super.pl --hc training.gtf --dna $workdir/data/genome.fasta" );
 	}
+
+	StopIfNotFound("$workdir/$wd/low/output.mod");
+	StopIfNotFound("$workdir/$wd/medium/output.mod");
+	StopIfNotFound("$workdir/$wd/high/output.mod");
 
 	$train_cfg{"model_low"}    = "$workdir/$wd/low/output.mod";
 	$train_cfg{"model_medium"} = "$workdir/$wd/medium/output.mod";
