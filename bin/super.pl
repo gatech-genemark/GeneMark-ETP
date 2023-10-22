@@ -145,61 +145,168 @@ foreach my $gid (sort{$a cmp $b } keys %gid2record)
 			if (( $label eq "Initial" )or( $label eq "Single" )or( $label eq "Terminal" ))
 			{
 				$seq = '';
+				my $intergenic_length = 0;
+
+				# check left and right borders
 
 				if (( $label eq "Initial" )or( $label eq "Single" ))
 				{
-					$seq  = substr( $genome{$feature->[0]}, $feature->[3] -1 -$margin, $margin );
+					my $Lpos = $feature->[3] -1 -$margin;
+
+					if ( $Lpos < 0 )
+					{
+						$seq = substr( $genome{$feature->[0]}, 0, $feature->[3] -1 );
+						$intergenic_length += $feature->[3] -1;
+					}
+					else
+					{
+						$seq  = substr( $genome{$feature->[0]}, $feature->[3] -1 -$margin, $margin );
+						$intergenic_length += $margin;
+					}
 				}
+
+				# Only "Single" will have intergenic from both ends. Add a buffer between two intergenic.
+				if ( $label eq "Single" )
+				{
+					$seq .= "NNNNNN";
+					$intergenic_length += 6;
+				}
+
 				if (( $label eq "Single" )or( $label eq "Terminal" ))
 				{
-					$seq .= substr( $genome{$feature->[0]}, $feature->[4], $margin );
+					my $Rpos = $feature->[4] + $margin;
+
+					if ( $Rpos > length($genome{$feature->[0]}))
+					{
+						$seq .= substr( $genome{$feature->[0]}, $feature->[4], $margin - ($Rpos - length($genome{$feature->[0]})));
+						$intergenic_length += $margin - ($Rpos - length($genome{$feature->[0]}));
+					}
+					else
+					{
+						 $seq .= substr( $genome{$feature->[0]}, $feature->[4], $margin );
+						 $intergenic_length += $margin;
+					}
 				}
-				PrintLineOut( "# Intergenic", $gcount, $cds_length, $feature->[3], $feature->[4], $margin, $feature->[6], $Lph, $Rph, $seq );
+
+				PrintLineOut( "# Intergenic", $gcount, $cds_length, $feature->[3], $feature->[4], $intergenic_length, $feature->[6], $Lph, $Rph, $seq );
 			}
 
 			# start
 			if (( $label eq "Initial" )or( $label eq "Single" ))
 			{
+				# Intron can split the start codon in "Initial" exon
+				# Skip split starts
+				my $signal_size = $feature->[4] - $feature->[3] + 1;
+				$signal_size = 3 if $signal_size > 3;
+
+				# Check for lleft/right borders
+
 				if ( $feature->[6] eq '+' )
 				{
-					$signal = substr( $genome{$feature->[0]}, $feature->[3] -1,    3 );
-					$seq    = substr( $genome{$feature->[0]}, $feature->[3] -1 -6, 3 +6 +3 );
+					my $Lpos = $feature->[3] -1;
+
+					if ( $signal_size != 3 )
+					{
+						$seq = '';
+						$signal = substr( $genome{$feature->[0]}, $feature->[3] -1, $signal_size );
+					}
+					elsif ($Lpos < 6 )
+					{
+						$seq = '';
+						$signal = substr( $genome{$feature->[0]}, $feature->[3] -1,    3 );
+					}
+					else
+					{
+						$signal = substr( $genome{$feature->[0]}, $feature->[3] -1,    3 );
+						$seq    = substr( $genome{$feature->[0]}, $feature->[3] -1 -6, 3 +6 +3 );
+					}
 				}
 				else
 				{
-					$signal = substr( $genome{$feature->[0]}, $feature->[4] -1 -2,    3 );
+					my $Rpos = $feature->[4] -1 -2 -3 +3 +6 +3;
+
+					if ( $signal_size != 3 )
+					{
+						$seq = '';
+						$signal = substr( $genome{$feature->[0]}, $feature->[4] -1 -$signal_size +1, $signal_size );
+					}
+					elsif ( $Rpos > length($genome{$feature->[0]}))
+					{
+						$seq = '';
+						$signal = substr( $genome{$feature->[0]}, $feature->[4] -1 -2,    3 );
+					}
+					else
+					{
+						$signal = substr( $genome{$feature->[0]}, $feature->[4] -1 -2,    3 );
+						$seq    = substr( $genome{$feature->[0]}, $feature->[4] -1 -2 -3, 3 +6 +3 );
+					}
+
 					$signal = RevComp($signal);
-					$seq    = substr( $genome{$feature->[0]}, $feature->[4] -1 -2 -3, 3 +6 +3 );
 					$seq    = RevComp($seq);
 				}
 
-				if ($signal eq "ATG")
+				if ($seq and ($signal eq "ATG"))
 				{
 					PrintLineOut( "# START", $gcount, $cds_length, $feature->[3], $feature->[4], $len, $feature->[6], $Lph, $Rph, $seq );
 				}
-				else { print "# $signal start $gid\n"; }
+				else { print "# $signal start $gid seq $seq strand $feature->[6]\n"; }
 			}
 
 			# stop
 			if (( $label eq "Terminal" )or( $label eq "Single" ))
 			{
+				my $signal_size = $feature->[4] - $feature->[3] + 1;
+				$signal_size = 3 if $signal_size > 3;
+
 				if ( $feature->[6] eq '+' )
 				{
-					$stop_label = LabelForStop( substr( $genome{$feature->[0]}, $feature->[4] -1 -2,     3 ));
-					$seq                      = substr( $genome{$feature->[0]}, $feature->[4] -1 -2 - 3, 3 +6 +3 );
+					my $Rpos = $feature->[4] -1 -2 -3 +3 +6 +3; 
+
+					if( $signal_size != 3 )
+					{
+						$seq = '';
+						$stop_label = substr( $genome{$feature->[0]}, $feature->[4] -1 -$signal_size +1, $signal_size )
+					}
+					elsif ($Rpos > length($genome{$feature->[0]}) )
+					{
+						$seq = '';
+						$stop_label = LabelForStop( substr( $genome{$feature->[0]}, $feature->[4] -1 -2,     3 ));
+					}
+					else
+					{
+						$stop_label = LabelForStop( substr( $genome{$feature->[0]}, $feature->[4] -1 -2,     3 ));
+						$seq                      = substr( $genome{$feature->[0]}, $feature->[4] -1 -2 -3, 3 +6 +3 );
+					}
 				}
 				else
 				{
-					$stop_label = LabelForStop( RevComp(substr( $genome{$feature->[0]}, $feature->[3] -1, 3 )));
-					$seq                              = substr( $genome{$feature->[0]}, $feature->[3] -1 -6 , 3 +6 +3 );
+					my $Lpos = $feature->[3] -1 -6;
+
+					if( $signal_size != 3 )
+					{
+						$seq = '';
+						$stop_label = substr( $genome{$feature->[0]}, $feature->[3] -1, $signal_size );
+						$stop_label = RevComp($stop_label);
+					}
+					elsif ($Lpos < 0 )
+					{
+						$seq = '';
+						$stop_label = LabelForStop( RevComp(substr( $genome{$feature->[0]}, $feature->[3] -1, 3 )));
+					}
+					else
+					{
+						$stop_label = LabelForStop( RevComp(substr( $genome{$feature->[0]}, $feature->[3] -1, 3 )));
+						$seq                              = substr( $genome{$feature->[0]}, $feature->[3] -1 -6 , 3 +6 +3 );
+					}
+
 					$seq = RevComp($seq);
 				}
 
-				if ( $stop_label )
+				if ( $seq and $stop_label )
 				{	
 					PrintLineOut( "# $stop_label", $gcount, $cds_length, $feature->[3], $feature->[4], $len, $feature->[6], $Lph, $Rph, $seq );
 				}
-				else { print "# $seq stop $gid\n"; }
+				else { print "# $stop_label stop $gid seq $seq strand $feature->[6]\n"; }
 			}
 		}
 
@@ -226,8 +333,9 @@ foreach my $gid (sort{$a cmp $b } keys %gid2record)
 			else
 			{
 				$signal = substr( $genome{$feature->[0]}, $feature->[4] -1 -1,    2 );
-				$signal = RevComp($signal);
 				$seq    = substr( $genome{$feature->[0]}, $feature->[4] -1 -1 -4, 2 +3 +4 );
+
+				$signal = RevComp($signal);
 				$seq    = RevComp($seq);
 			}
 
@@ -235,10 +343,9 @@ foreach my $gid (sort{$a cmp $b } keys %gid2record)
 			{
 				PrintLineOut( "# DON", $gcount, $cds_length, $feature->[3], $feature->[4], $len, $feature->[6], $Lph, $Rph, $seq );
 			}
-			else { print "# $signal don $gid\n"; }
+			else { print "# $signal don $gid seq $seq strand $feature->[6]\n"; }
 
 			# Acceptor
-
 			if ( $feature->[6] eq '+' )
 			{
 				$signal = substr( $genome{$feature->[0]}, $feature->[4] -1 -1,     2 );
@@ -247,8 +354,9 @@ foreach my $gid (sort{$a cmp $b } keys %gid2record)
 			else
 			{
 				$signal = substr( $genome{$feature->[0]}, $feature->[3] -1,    2 );
+				$seq    = substr( $genome{$feature->[0]}, $feature->[3] -1 -1, 2 +18 +1 );
+
 				$signal = RevComp($signal);
-				$seq    = substr( $genome{$feature->[0]}, $feature->[3] -1 -1, 2 +18 +1 ); 
 				$seq    = RevComp($seq);
 			}
 
@@ -256,7 +364,7 @@ foreach my $gid (sort{$a cmp $b } keys %gid2record)
 			{
 				PrintLineOut( "# ACC", $gcount, $cds_length, $feature->[3], $feature->[4], $len, $feature->[6], $Lph, $Rph, $seq );
 			}
-			else { print "# $signal acc $gid\n"; }
+			else { print "# $signal acc $gid seq $seq strand $feature->[6]\n"; }
 		}		
 	}
 
