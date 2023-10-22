@@ -226,11 +226,13 @@ sub ParseCMD
 
 	$verbose = 1 if $debug;
 
-        die "error, --hc is not set\n" if !$hc;
-        $hc = abs_path($hc);
+	die "error, option --hc is not set\n" if !$hc;
+	die "error, file with training set is not found: $hc\n" if ( ! -e $hc);
+	$hc = abs_path($hc);
 
-        die "error, --dna is not set\n" if !$dna;
-        $dna = abs_path($dna);
+	die "error, option --dna is not set\n" if !$dna;
+	die "error, file with genome sequence is not found: $dna\n" if ( ! -e $dna);
+	$dna = abs_path($dna);
 }
 # -----------
 
