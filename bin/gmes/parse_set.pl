@@ -592,32 +592,56 @@ sub SplitSet
 			
 			if ( $DON and  $label eq 'DON' )
 			{
-				print $DON "$value\t$ph_L\n";
+				if ( length($value) > 1 )
+				{
+					print $DON "$value\t$ph_L\n";
+				}
+				else { print "# warning, skipping line, sequence for donor is shorter then 2nt: $value\n"; }
 			}
 
 			if ( $ACC and  $label eq 'ACC' )
 			{
-				print $ACC "$value\t$ph_L\n";
+				if ( length($value) > 1 )
+				{
+					print $ACC "$value\t$ph_L\n";
+				}
+				else { print "# warning, skipping line, sequence for acceptor is shorter then 2nt: $value\n"; }
 			}
 			
 			if ( $START and  $label eq 'START' )
 			{
-				print $START "$value\n";
+				if ( length($value) > 2 )
+				{
+					print $START "$value\n";
+				}
+				else { print "# warning, skipping line, sequence for stop ATG is shorter then 3nt: $value\n"; }
 			}
 
 			if ( $STOP_TAA and  $label eq 'STOP_TAA' )
 			{
-				print $STOP_TAA "$value\n";
+				if ( length($value) > 2 )
+				{
+					print $STOP_TAA "$value\n";
+				}
+				else { print "# warning, skipping line, sequence for stop TAA is shorter then 3nt: $value\n"; }
 			}
 			
 			if ( $STOP_TAG and  $label eq 'STOP_TAG' )
 			{
-				print $STOP_TAG "$value\n";
+				if ( length($value) > 2 )
+				{
+					print $STOP_TAG "$value\n";
+				}
+				else { print "# warning, skipping line, sequence for stop TAG is shorter then 3nt: $value\n"; }
 			}
 			
 			if ( $STOP_TGA and  $label eq 'STOP_TGA' )
 			{
-				print $STOP_TGA "$value\n";
+				if ( length($value) > 2 )
+				{
+					print $STOP_TGA "$value\n";
+				}
+				else { print "# warning, skipping line, sequence for stop TGA is shorter then 3nt: $value\n"; }
 			}
 
 			if( $BP and $BP_REGION and ($label eq 'Intron') )
@@ -670,19 +694,27 @@ sub SplitSet
 			{
 				if( $label =~ /Intron/ )
 				{
-					$value = substr( $value, 6, -20 );
-					$value =~ s/.$/n/;
-					$value =~ s/^./n/;
+					if ( length($value) > 20+6 )
+					{
+						$value = substr( $value, 6, -20 );
+						$value =~ s/.$/n/;
+						$value =~ s/^./n/;
 
-					print $NON " $value\n";
+						print $NON " $value\n";
+					}
+					else { print "# warning, skipping short intron\n"; }
 				}
 				elsif( $label =~ /Intergenic/ )
 				{
-					$value = substr( $value, 20, -20 );
-					$value =~ s/.$/n/;
-					$value =~ s/^./n/;
+					if ( length($value) > 20+20 )
+					{
+						$value = substr( $value, 20, -20 );
+						$value =~ s/.$/n/;
+						$value =~ s/^./n/;
 
-					print $NON "$value\n";
+						print $NON "$value\n";
+					}
+					else { print "# warning, skipping short intergenic\n"; }
 				}
 			}
 			
