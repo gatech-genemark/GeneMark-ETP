@@ -61,6 +61,8 @@ my $clean = 0;
 my $verbose = 0;
 my $warnings = 0;
 my $debug = 0;
+
+my $SAMTOOLS_M = 0;     # pass this to samtools
 # -------------
 # input data information from "$cfg" YAML file
 my $species = '';
@@ -633,6 +635,7 @@ sub Usage
 	print "  --debug\n";
 	print "  --proc [$proc]   name of working folders for protein DB related steps\n";
 	print "              by default, '--proc' is initialized from protein DB name in '--cfg' YAML file\n";
+	print "  --samtools_m []  Set maximum memory per thread in samtools sort\n";
 	print "\nOutput:\n\n";
 	print "    predicted genes are located in working folder '--workdir'\n";
 	print "    output files are named 'genemark.gtf' and 'genemark_supported.gtf'\n";
@@ -662,6 +665,7 @@ sub ParseCMD
 		'extend=i'    => \$extend,
 		'paper=i'     => \$paper,
 		'proc=s'      => \$proc,
+		'samtools_m=s' => \$SAMTOOLS_M,
 	);
 
 	die "error on command line\n" if( !$opt_results );
@@ -1107,7 +1111,9 @@ sub MapRNASeq
 				}
 
 				print "# from sam to sorted bam for $set\n" if $verbose;
-				system("samtools sort -o $out_bam -@ $cores $out_sam");
+				my $samtools_option = '';
+				$samtools_option = " -m $SAMTOOLS_M " if $SAMTOOLS_M;
+				system("samtools sort $samtools_option -o $out_bam -@ $cores $out_sam");
 				print "# from sam to sorted bam for $set ... done\n" if $verbose;
 			}
 		}
