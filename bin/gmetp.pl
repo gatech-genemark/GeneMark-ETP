@@ -27,7 +27,7 @@ use YAML::XS qw(LoadFile);
 use Parallel::ForkManager;
 use Data::Dumper;
 
-my $version = "1.01";
+my $version = "1.02";
 
 # -------------
 my $bin = $Bin;          # folder with ETP code
@@ -97,6 +97,8 @@ if (!$softmask)
 PrepareProteinDBFile($protdb_path) if 1;
 # must run
 ($proc, $protdb_name) = SetTrainingPredictionFolder( $protdb_path, $proc );
+
+exit;
 
 if (!$bam)
 {
@@ -744,7 +746,7 @@ sub GetFileNameFromPathName
 {
 	my $fpath = shift;
 
-	die "error, file path is empty\n" if (!defined $fpath);
+	die "error, file path is empty in GetFileNameFromPathName\n" if (!defined $fpath or ($fpath !~ /\S/));
 
 	my $fname = '';
 
@@ -753,7 +755,9 @@ sub GetFileNameFromPathName
 		$fname = $1;
 	}
 	else
-		{ die "error on fname parsing from fpath: $fpath\n"; }
+		{ die "error on file name parsing from file path: $fpath\n"; }
+
+	die "error, file name is empty in GetFileNameFromPathName\n" if (!defined $fname or ($fname !~ /\S/));
 
 	return $fname;
 }
@@ -764,9 +768,36 @@ sub PrepareProteinDBFile
 
 	print "### download protein db\n" if $verbose;
 
-	ChDir("$workdir/data");
+	die "error, protein file path is empty in PrepareProteinDBFile\n" if !$fpath;
 
-	my $fname = FileFromPath($fpath);
+	ChDir($workdir);
+	MkDir("$workdir/data");
+	MkDir("$workdir/arx");
+	ChDir("$workdir/arx");
+
+	my $fname = GetFileNameFromPathName($fpath);
+
+	if ( CreateThis("$workdir/data/$fname") )
+	{
+		if ( CreateThis("$fname") )
+		{
+			FileFromPath($fpath);
+		}
+		StopIfNotFound($fname);
+		system( "$bin/re_format_aa_fasta.pl $fname $workdir/data/$fname" ) and die "error in protein file parsing: $fname\n";
+	}
+	else
+	{
+		print "# reusing file 'data/$fname'\n" if $verbose;
+	}
+
+	StopIfNotFound("$workdir/data/$fname");
+
+	if ( $clean and ( -e $fname ))
+	{
+		unlink $fname;
+		print "# removed file $fname\n" if $verbose;
+	}
 
 	print "### download protein db ... done\n\n" if $verbose;
 
@@ -1596,14 +1627,14 @@ sub FileFromPath
 		{
 			if ( $force or ( ! -e "$fname.gz" and ! -e $fname ))
 			{
-				system( "cp", $fpath, "./" ) and die "error on copy file from path\n";
+				system( "cp", $fpath, "./" ) and die "error on copy file from path: $fpath\n";
 			}
 		}
 		elsif ( $fpath =~ /^https:\/\// or $fpath =~ /^http:\/\// or $fpath =~ /^ftp:\/\// )
 		{
 			if ( $force or ( ! -e "$fname.gz" and ! -e $fname ))
 			{
-				system( "wget", "-q", $fpath ) and die "error on wget file from path\n";
+				system( "wget", "-q", $fpath ) and die "error on wget file from path: $fpath\n";
 			}
 		}
 		elsif ( $fpath =~ /^(\S+)@/ )
@@ -1682,9 +1713,9 @@ sub CreateThis
 {
 	my $fname = shift;
 
-	if ( ! $fname )
+	if ( !defined $fname or ( $fname !~ /\S/ ))
 	{
-		die "error, name is empty\n";
+		die "error, file name is empty in CreateThis\n";
 	}
 
 	if ( $force or ( ! -e $fname ))
