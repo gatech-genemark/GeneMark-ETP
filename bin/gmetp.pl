@@ -98,8 +98,6 @@ PrepareProteinDBFile($protdb_path) if 1;
 # must run
 ($proc, $protdb_name) = SetTrainingPredictionFolder( $protdb_path, $proc );
 
-exit;
-
 if (!$bam)
 {
 	PrepareRNASeq() if 1;
