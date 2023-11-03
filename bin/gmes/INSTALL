@@ -5,13 +5,7 @@
 
 Installation instructions for GeneMark* software
 
-a. Copy the content of distribution to desired location.
-b. Install the key: copy key "gm_key" into users home directory as:
-
-  gunzip gm_key.gz
-
-  cp gm_key ~/.gm_key
-
+Copy the content of distribution to desired location.
 Program is ready for execution.
 
 Perl scripts are configured with default Perl location at "/usr/bin/perl".

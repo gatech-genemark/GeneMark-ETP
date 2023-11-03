@@ -1,53 +1,75 @@
-# GeneMark-ETP project
+# GeneMark-ETP project  
 
-## GENERAL ------------
-Move ETP folder to desired location and provide path to "tools" folder.
+## GENERAL INSTALLATION ------------  
+Download GeneMark-ETP project from GitHub https://github.com/gatech-genemark/GeneMark-ETP  
+Move the ETP folder to the desired location and include the path to the "tools" folder.  
 
-In BASH shell:
+In BASH shell:  
 ```
 export PATH=/path_to_ETP/tools:$PATH
 ```
 ## PERL and PYTHON -----------
-Python 3 is required.
-Perl is required.
+Python 3 is required.  
+Perl is required.  
 
-Install required Perl libraries from CPAN.
-For example on RedHat/CentOS:
-
+Install required Perl libraries from CPAN.  
+For example, on RedHat/CentOS:  
+```
 yum -y install perl-App-cpanminus.noarch
-cpanm YAML::XS
-cpanm Thread::Queue
+
+cpanm Cwd
+cpanm Data::Dumper
+cpanm File::Path
+cpanm File::Spec
+cpanm File::Temp
+cpanm FindBin
+cpanm Getopt::Long
+cpanm Hash::Merge
+cpanm List::Util
 cpanm MCE::Mutex
 cpanm Math::Utils
-cpanm Hash::Merge
 cpanm Parallel::ForkManager
+cpanm Statistics::LineFit
+cpanm Storable
+cpanm Thread::Queue
+cpanm YAML
+cpanm YAML::XS
+capnm threads
+```
+## Compiled executables  -----------  
+All compiled executables are provided for 64-bit LINUX kernel 3.10.  
+The software was compiled with static library linking and should work on many LINUX systems.  
 
-## Compiled executable  -----------
-All compiled executables are provided for 64-bit LINUX kernel 3.10.
-Software was compiled with static library linking and should work on many LINUX systems as-is.
+Another option is to install the required by GeneMark-ETP packages independently from GeneMark-ETP distribution
+and to make executables available in the path.  
+
+The list of required third-party bioinformatics tools is provided in this document.  
+
+## Test ETP installation  -----------  
+
+ETP is ready for usage.  
+
+For installation testing, download one of the species configuration files from the repository
+https://github.com/gatech-genemark/GeneMark-ETP-exp
+and execute the code as described in the repository.  
+
+####################################################
+# Technical details  
+# Check the text below if you are interested in:
+#     Which third-party tools are included in ETP?
+#     How are third-party tools compiled and configured?
+####################################################
 
 ## THIRD PARTY TOOLS expected in the default path -----------
 wget
   wget is required with some input files.
-  User may provide a link to WWW resource in YAML species configuration file, for example, path to genome file in GenBank.
-  In such case, genome will be downloaded using "wget" command. 
-  "wget" is not required when input files are located on local computer system.
+  Users may provide a link to WWW resource in the YAML species configuration file, for example, the path to the genome file in GenBank.
+  In this case, the genome will be downloaded using the "wget" command.
+  "wget" is not required when input files are located on a local computer system.
 scp
-  "scp" is required with some input files.
+  "scp" is required when input files are located on the remote computer system and the user account is configured for remote file copy.
 gunzip
-  "gunzip" is required with some input files.
-
-## Test ETP installation
-
-ETP is ready for usage.
-
-For installation testing, follow species configuration in repository
-https://github.com/gatech-genemark/GeneMark-ETP-exp
-and execude the code as discribed in repository,
-
-
-####################################################
-Information below is provided only for reproducibility of code compilation.
+  "gunzip" is required when input files are compressed by gzip.
 
 ## GeneMark dependencies -----------
 GeneMark-ETP includes two GeneMark packages:
@@ -65,11 +87,11 @@ Some C/C++ code dependencies from GeneMark* packages:
   - probuild
 
 ## THIRD PARTY TOOLS in "bin" folder -----------
-Two programs from AUGUSTUS and BRAKER projects are included into GeneMark-ETP:
+Two programs from AUGUSTUS and BRAKER projects are included in GeneMark-ETP:
  - bam2hints
  - filterIntronsFindStrand.pl
 
-Code of bam2hints was compiles using the following commands:
+The code of bam2hints was compiled using the following commands:
 ```
 cd tools
 mkdir -p src
@@ -93,15 +115,10 @@ cp bam2hints  ../../../../../bin
 ```
 
 ## THIRD PARTY TOOLS in PATH -----------
-Please, check licensing conditions for third party tools.
+Please check licensing conditions for third-party tools.
 
-GeneMark-ETP dependencies (64-bit LINUX kernel 3.10) are provided in the folder "tools".
-Most of the tools are compiled with static library linking and should work on many LINUX systems as-is.
+The list of required third-party bioinformatics tools is below:
 
-Another option is to install required for GeneMark-ETP packages independently from GeneMark-ETP distribution
-and to make executables available in the path.
-
-List of required third party bioinformatics tools is below:
 
 1. required
 
