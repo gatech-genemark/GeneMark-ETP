@@ -27,7 +27,7 @@ Examples of input configuration files can be found at https://github.com/gatech-
 ### GeneMark-ETP pipeline
 
 GeneMark-ETP is distributed under Creative Commons Attribution NonCommercial ShareAlike 4.0 License.
-See the [full text of the license](License-Creative-Commons-Attribution-NonCommercial-ShareAlike-4.0.txt).  
+See the [full text of the license](License-Creative-Commons-Attribution-NonCommercial-ShareAlike-4.0-International.txt).  
 
 ### Third-party tools
 
