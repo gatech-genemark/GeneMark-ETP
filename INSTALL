@@ -80,6 +80,9 @@ with corresponding dependencies.
 GeneMark-ES/ET/EP+ is located in
   bin/gmes
 
+The source code of GeneMark.hmm eukaryotic 3 algorithm is available here
+https://github.com/gatech-genemark/GeneMarkHmmEukaryotic3
+
 GeneMarkS-T is located in
   bin/gmst
 
