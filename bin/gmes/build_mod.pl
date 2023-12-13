@@ -47,6 +47,19 @@ $GC_donor = $cfg->{'Parameters'}->{'gc_donor'} if ( $cfg->{'Parameters'}->{'gc_d
 my %base_mod;
 LoadMod( \%base_mod, $cfg->{$section}->{'def'} );
 
+if ( $cfg->{'Parameters'}->{'gcode'} == 1 )
+{
+	$base_mod{'TAA_ON'} = 1;
+	$base_mod{'TAG_ON'} = 1;
+	$base_mod{'TGA_ON'} = 1;
+}
+elsif ( $cfg->{'Parameters'}->{'gcode'} == 6 )
+{
+	$base_mod{'TAA_ON'} = 0;
+	$base_mod{'TAG_ON'} = 0;
+	$base_mod{'TGA_ON'} = 1;
+}
+
 # ------------------------------------------------
 
 if( $section eq 'ES_ini' )

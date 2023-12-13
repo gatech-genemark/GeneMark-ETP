@@ -639,7 +639,7 @@ sub CountFromFile
 		$cfg->{$section}->{'width'}  = $seq_length;
 	}
 	
-	if ( $sequences_used == 0 ) { print "error, no valid sequences were found\n"; exit 1; }
+#	if ( $sequences_used == 0 ) { print "error, no valid sequences were found\n"; exit 1; }
 	
 	if ( $v )
 	{

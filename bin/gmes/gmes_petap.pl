@@ -145,7 +145,7 @@ elsif( $cfg->{'Parameters'}->{'EP'} and !$cfg->{'Parameters'}->{'ETP'} )
 
 	}
 }
-# this is very old version - not the the same as publication
+# this is very old version - not the the same as ETP publication
 elsif( $cfg->{'Parameters'}->{'ETP'} )
 {
 	RunET();
@@ -1468,7 +1468,7 @@ sub ReadContigNames
 # ------------------------------------------------
 sub GetHeuristicFileName
 {
-	my( $GC ) = @_;
+	my( $GC, $gcode ) = @_;
 	$GC = int $GC;
 
 	my $MIN_HEURISTIC_GC = 32;
@@ -1476,7 +1476,7 @@ sub GetHeuristicFileName
 	if( $GC < $MIN_HEURISTIC_GC ) { $GC = $MIN_HEURISTIC_GC; }
 	if( $GC > $MAX_HEURISTIC_GC ) { $GC = $MAX_HEURISTIC_GC; }
 	
-	return ResolvePath( "heu_05_gcode_1_gc_$GC.mod", $cfg->{'Config'}->{'heu_dir'} );
+	return ResolvePath( "heu_05_gcode_". $gcode ."_gc_". $GC .".mod", $cfg->{'Config'}->{'heu_dir'} );
 }
 # ------------------------------------------------
 sub GetGCfromStatfile
@@ -1517,7 +1517,9 @@ sub PrepareInitialModel
 		# default method in ES and prerequisite for ET/EP
 		
 		my $GC = GetGCfromStatfile( "info/training.general" );
-		$ini_mod = GetHeuristicFileName( $GC );
+		my $gcode   = $cfg->{'Parameters'}->{'gcode'};
+
+		$ini_mod = GetHeuristicFileName( $GC, $gcode );
 		
 		# save info about heuristic model name here
 		$cfg->{'Parameters'}->{'ini_mod'} = $ini_mod;
@@ -2090,6 +2092,25 @@ sub CheckBeforeRun
 	
 	if (( $cfg->{'Parameters'}->{'format'} ne "GTF" )&&( $cfg->{'Parameters'}->{'format'} ne "GFF3" ))
 		{ print "error, specified output format is not supported: ". $cfg->{'Parameters'}->{'format'} ."\n"; exit 1; }
+
+	CheckGcode( $cfg->{'Parameters'}->{'gcode'} );
+
+	# temporary fix for 29 - 6 
+	if ( $cfg->{'Parameters'}->{'gcode'} eq "29" )
+	{
+		$cfg->{'Parameters'}->{'gcode'} = "6";
+	}
+}
+# ------------------------------------------------
+sub CheckGcode
+{
+	my $value = shift;
+
+	if ( $value eq "1" ) {;}
+	elsif ( $value eq "6" ) {;}
+	elsif ( $value eq "29" ) {;}
+	else
+		{ print "error, input genetic code $value is not supported\n"; exit 1; }
 }
 # ------------------------------------------------
 sub CheckEPscore
@@ -2161,6 +2182,7 @@ sub ParseCMD
 
 		'fungus',
 		'evidence=s',
+		'gcode=i',
 		
 		'cores=i',
 		'pbs',
@@ -2345,7 +2367,7 @@ sub ResolvePath
 sub SetDefaultValues
 {
 	# basic configuration
-	$cfg->{'Config'}->{'version'}  = "4.69";
+	$cfg->{'Config'}->{'version'}  = "4.72";
 	$cfg->{'Config'}->{'heu_dir'}  = "heu_dir";
 	$cfg->{'Config'}->{'def_cfg'}  = "gmes.cfg";
 	$cfg->{'Config'}->{'gm_hmm'}   = "gmhmme3";
@@ -2386,6 +2408,7 @@ sub SetDefaultValues
 	$cfg->{'Parameters'}->{'sequence'} = '';
 	$cfg->{'Parameters'}->{'fungus'}   = 0;
 	$cfg->{'Parameters'}->{'evidence'} = '';
+        $cfg->{'Parameters'}->{'gcode'}    = 1;
 
 	$cfg->{'Parameters'}->{'ES'}       = 0;
 	$cfg->{'Parameters'}->{'ET'}       = '';
@@ -2486,6 +2509,9 @@ Select one of the gene prediction algorithms:
 
   To run hmm, ES, ET or EP in PLUS mode (prediction with hints)
     --evidence     [filename]; file with hints in GFF format
+
+  To run algorithms with alternative genetic codes
+    --gcode      [number]; default $cfg->{'Parameters'}->{'gcode'}; supported 1 and 6/29
 
 Output formatting options:
   --format       [label]; default $cfg->{'Parameters'}->{'format'}; output gene prediction in GTF of GFF3 format
