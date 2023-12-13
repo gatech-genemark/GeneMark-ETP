@@ -1,0 +1,232 @@
+# GeneMark-ETP project  
+
+####################################################
+# Technical details  
+# Check the text below if you are interested in:
+#     Which third-party tools are included in ETP?
+#     How are third-party tools compiled and configured?
+####################################################
+
+## THIRD PARTY TOOLS expected in the default path -----------
+wget
+  wget is required with some input files.
+  Users may provide a link to WWW resource in the YAML species configuration file, for example, the path to the genome file in GenBank.
+  In this case, the genome will be downloaded using the "wget" command.
+  "wget" is not required when input files are located on a local computer system.
+scp
+  "scp" is required when input files are located on the remote computer system and the user account is configured for remote file copy.
+gunzip
+  "gunzip" is required when input files are compressed by gzip.
+
+## GeneMark dependencies -----------
+GeneMark-ETP includes two GeneMark packages:
+  - GeneMark-ES/ET/EP+
+  - GeneMarkS-T
+with corresponding dependencies.
+
+GeneMark-ES/ET/EP+ is located in
+  bin/gmes
+
+The source code of GeneMark.hmm eukaryotic 3 algorithm is available here
+https://github.com/gatech-genemark/GeneMarkHmmEukaryotic3
+
+GeneMarkS-T is located in
+  bin/gmst
+
+Some C/C++ code dependencies from GeneMark* packages:
+  - probuild
+
+## THIRD PARTY TOOLS in "bin" folder -----------
+Two programs from AUGUSTUS and BRAKER projects are included in GeneMark-ETP:
+ - bam2hints
+ - filterIntronsFindStrand.pl
+
+The code of bam2hints was compiled using the following commands:
+```
+cd tools
+mkdir -p src
+cd src
+git clone https://github.com/pezmaster31/bamtools.git
+cd bamtools/
+mkdir -p build
+cd build
+cmake ..
+make
+make install
+
+cd ../../
+git clone https://github.com/Gaius-Augustus/Augustus.git
+cd Augustus/auxprogs/bam2hints/
+```
+Add -static option to LDFLAGS in the Makefile
+```
+make
+cp bam2hints  ../../../../../bin
+```
+
+## THIRD PARTY TOOLS in PATH -----------
+Please check licensing conditions for third-party tools.
+
+The list of required third-party bioinformatics tools is below:
+
+
+1. required
+
+name:       bedtools
+version:    version 2.30
+source:     https://github.com/arq5x/bedtools2
+programs:   bedtools
+
+Code in the folder "tools" was installed using the following commands:
+```
+cd tools
+mkdir -p src
+cd src
+wget https://github.com/arq5x/bedtools2/releases/download/v2.30.0/bedtools.static.binary
+chmod +x bedtools.static.binary
+mv bedtools.static.binary ../bedtools
+```
+
+2. required when using GeneMark-ETP with automatic download of files with RNA-Seq data from NCBI SRA database
+
+name:       sra-tools
+version:    version 3.00
+source:     https://github.com/ncbi/sra-tools
+programs:   fastq-dump, prefetch, vdb-config
+
+Code in the folder "tools" was installed using the following commands:
+```
+cd tools
+mkdir -p src
+cd src
+wget https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/3.0.1/sratoolkit.3.0.1-centos_linux64.tar.gz
+tar xf sratoolkit.3.0.1-centos_linux64.tar.gz
+rm sratoolkit.3.0.1-centos_linux64.tar.gz
+mv sratoolkit.3.0.1-centos_linux64 sratoolkit
+cp sratoolkit/bin/fasterq-dump-orig.3.0.1 ../fastq-dump
+cp sratoolkit/bin/prefetch-orig.3.0.1 ../prefetch
+cp sratoolkit/bin/vdb-config ../vdb-config
+```
+
+ATTENTION
+NCBI sratoolkit must be configured before first usage.
+Run configuration script: vdb-config --interactive
+Default configuration was used in our tests.
+
+3. required for RNA-Seq alignment
+
+name:       hisat2
+version:    version 2.2.1
+source:     https://github.com/DaehwanKimLab/hisat2
+programs:   hisat2, hisat2-build, hisat2-build-l, hisat2-build-s, hisat2-align-l, hisat2-align-s
+
+Code in the folder "tools" was installed using the following commands:
+```
+cd tools
+mkdir -p src
+cd  src
+wget https://cloud.biohpc.swmed.edu/index.php/s/fE9QCsX3NH4QwBi/download
+mv download hisat2-2.2.1-source.zip
+unzip hisat2-2.2.1-source.zip
+rm hisat2-2.2.1-source.zip
+cd hisat2-2.2.1
+```
+Add -static option to RELEASE_FLAGS in Makefile
+   RELEASE_FLAGS  = -O3 $(BITS_FLAG) $(SSE_FLAG) -funroll-loops -g3 -static
+```
+make
+cp hisat2 ../../
+cp hisat2-build ../../
+cp hisat2-build-l ../../
+cp hisat2-build-s ../../
+cp hisat2-align-l ../../
+cp hisat2-align-s ../../
+cd ../../
+```
+
+4. required for RNA-Seq alignment BAM file preparation
+
+name:       samtools
+version:    version 1.16.1
+source:     https://github.com/samtools/samtools/releases/download/1.16.1/samtools-1.16.1.tar.bz2
+programs:   samtools
+
+Code in the folder "tools" was installed using the following commands:
+```
+cd tools
+mkdir -p src
+cd src
+wget https://github.com/samtools/samtools/releases/download/1.16.1/samtools-1.16.1.tar.bz2
+tar xf samtools-1.16.1.tar.bz2
+rm samtools-1.16.1.tar.bz2
+cd samtools-1.16.1
+./configure --without-libdeflate --disable-bz2 --disable-lzma --without-curses --disable-libcurl
+make samtools LDFLAGS="-static"
+cp samtools ../../
+cd ../../
+```
+
+5. required
+
+name:       stringtie
+version:    version 2.2.1
+source:     https://github.com/gpertea/stringtie.git
+programs:   stringtie
+
+Code in the folder "tools" was installed using the following commands:
+```
+cd tools
+mkdir -p src
+cd src
+git clone https://github.com/gpertea/stringtie.git
+cd stringtie
+make clean release LDFLAGS=' -static '
+cp stringtie ../../
+cd ../../
+```
+
+6. required
+
+name:       gffread
+version:    
+source:     https://github.com/gpertea/gffread
+programs:   gffread
+
+Code in the folder "tools" was installed using the following commands:
+```
+cd tools
+mkdir -p src
+cd src
+git clone https://github.com/gpertea/gffread
+cd gffread
+make LDFLAGS=' -static '
+cp gffread ../../
+cd ../../
+```
+
+7. required
+
+name:       diamond
+version:
+source:     https://github.com/bbuchfink/diamond.git
+programs:   diamond
+
+Code in the folder "tools" was installed using the following commands:
+```
+cd tools
+mkdir -p src
+cd src
+git clone https://github.com/bbuchfink/diamond.git
+cd diamond
+echo "" >> CMakeLists.txt
+echo "SET_TARGET_PROPERTIES (diamond PROPERTIES LINK_SEARCH_START_STATIC 1)" >> CMakeLists.txt
+echo "SET_TARGET_PROPERTIES (diamond PROPERTIES LINK_SEARCH_END_STATIC 1)"   >> CMakeLists.txt
+mkdir build
+cd build
+cmake .. -DBUILD_STATIC=ON -DSTATIC_LIBGCC=ON -DSTATIC_LIBSTDC++=ON
+make
+cp diamond ../../../
+cd ../../
+```
+## END -----------
+
