@@ -1,20 +1,20 @@
 # -----------------
 # Alex Lomsadze
-# 2022
+# 2023
 # alexl@gatech.edu
 # Georgia Institute of Technology, Atlanta, Georgia, USA
 # -----------------
 
-Programs in this folder are third party tools used in GeneMark-ETP project.
+Programs in this folder are third-party tools used in the GeneMark-ETP project.
 
-Code was compiled with static library linking when such linking was possible.
-See details in INSTALL file.
+Programs are compiled with static library linking when such linking is possible.
+See details in the INSTALL.details file.
 
 ATTENTION
-Several options in "samtools" code were switched off during compilation with static libraries.
+Several options in "samtools" that are not required by ETP 
+are switched off during compilation (to allow static linking).
 
-To check if code is executable on your platform,
-please run
+To check if programs are executable on your platform, please run
    ./check_ETP_tools.pl
 
 # -----------------
