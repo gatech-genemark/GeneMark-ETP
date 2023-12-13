@@ -1,4 +1,4 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 #=============================================================
 # Copyright Georgia Institute of Technology, Atlanta, Georgia, USA
 # Distributed by GeneProbe Inc., Atlanta, Georgia, USA
