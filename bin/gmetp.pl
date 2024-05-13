@@ -726,7 +726,7 @@ sub FilterGMST
 
 	if ( CreateThis("complete.gtf") )
 	{
-		system( "$bin/GeneMarkSTFiltering/filter.py --minUnsupportedLogOdds 0 --PROTHINT_PATH $bin/gmes/ProtHint/bin --outputFolder . $in_gmst_gff $in_tr_fasta $in_tr_gff $prot_db $in_genome 2> $workdir/filter_gmst.log" );
+		system( "$bin/GeneMarkSTFiltering/filter.py --threads $cores --minUnsupportedLogOdds 0 --PROTHINT_PATH $bin/gmes/ProtHint/bin --outputFolder . $in_gmst_gff $in_tr_fasta $in_tr_gff $prot_db $in_genome 2> $workdir/filter_gmst.log" );
 
 		system( "$bin/compare_intervals_exact.pl --f1 complete.gtf --f2 complete.gtf --trans --shared12 --out complete.id --original 1" );
 		system( "$bin/select_by_transcript_id_from_gtf.pl complete.id complete.gtf complete_uniq.gtf" );

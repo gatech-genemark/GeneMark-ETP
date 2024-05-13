@@ -115,7 +115,7 @@ class Predictions(object):
     def filterComplete(self, diamondDB, args):
         if not self.diamondOut:
             self.diamondOut = runDiamond(args.genome, self.gtfFile, diamondDB,
-                                         args.topProteins)
+                                         args.topProteins, args.threads)
 
         notFound = set(self.predictions.keys())
         selected = set()
@@ -134,7 +134,7 @@ class Predictions(object):
     def filterIncomplete(self, diamondDB, args, shorterPredictions):
         if not self.diamondOut:
             self.diamondOut = runDiamond(args.genome, self.gtfFile, diamondDB,
-                                         args.topProteins)
+                                         args.topProteins, args.threads)
 
         selected = set()
         selectedShortened = set()
@@ -422,24 +422,33 @@ def gmst2Hints(gmst, tseq, ggtf, complete=False, lorf=False, extend=False,
     return Predictions(gtfOut)
 
 
-def makeDiamondDB(proteins):
+def makeDiamondDB(proteins, threads):
     db = temp("diamondDB", ".dmnd").name
+
+    threadsArg = ""
+    if threads:
+        threadsArg = f"--threads {threads}"
     logging.info(f'Making diamond database from {proteins}')
-    systemCall(f'{diamondDir}diamond makedb --in {proteins} -d {db}')
+    systemCall(f'{diamondDir}diamond makedb --in {proteins} -d {db} \
+               {threadsArg}')
     return db
 
 
-def runDiamond(genome, gmst, diamondDB, maxTargets):
+def runDiamond(genome, gmst, diamondDB, maxTargets, threads):
     query = temp("queryProteins", ".fasta").name
     output = temp("diamond", ".out").name
     systemCall(f'{binDir}/proteins_from_gtf.pl --seq {genome} --annot {gmst} \
                --out {query}')
 
+    threadsArg = ""
+    if threads:
+        threadsArg = f"--threads {threads}"
     logging.info(f'Running DIAMOND with the query: {query}')
     systemCall(f'{diamondDir}diamond blastp --query {query} --db {diamondDB} \
                --outfmt 6 qseqid sseqid pident length positive mismatch \
                gapopen qstart qend sstart send evalue bitscore qlen slen \
-               --max-target-seqs {maxTargets} --more-sensitive > {output}')
+               --max-target-seqs {maxTargets} --more-sensitive \
+               {threadsArg} > {output}')
 
     return loadDiamondResult(output)
 
@@ -490,12 +499,13 @@ def selectProteinSubset(alignedQueries, queryList, proteins):
 def classifyPartial(longerPredictions, shorterPredictions,
                     allProteinsDB, args):
     longerDiamond = runDiamond(args.genome, longerPredictions.gtfFile,
-                               allProteinsDB, args.topProteins)
+                               allProteinsDB, args.topProteins, args.threads)
     proteinsForShorter = selectProteinSubset(longerDiamond,
                                              shorterPredictions.getIDs(),
                                              args.proteins)
     shorterDiamond = runDiamond(args.genome, shorterPredictions.gtfFile,
-                                makeDiamondDB(proteinsForShorter), 0)
+                                makeDiamondDB(proteinsForShorter,
+                                              args.threads), 0, args.threads)
     partialSet = set()
     completeSet = set()
     for ID, shorterQuery in shorterDiamond.items():
@@ -582,9 +592,12 @@ def runProtHint(outDirName, predictions, args):
     seeds = outDirName + "/seeds.gtf"
     predictions.print(seeds)
 
+    threadsArg = ""
+    if args.threads:
+        threadsArg = f"--threads {args.threads}"
     systemCall(f'{prothintDir}prothint.py {args.genome} {args.proteins} \
                --geneSeeds {seeds} --workdir {outDirName} --longGene 30000000 \
-               --longProtein 15000000')
+               --longProtein 15000000 {threadsArg}')
 
 
 def setup(args):
@@ -617,7 +630,7 @@ def main():
     # Save this for later filtering.
     longestIsoformsAll = rawPredictions.getLongestIsoforms()
     rawPredictions = rawPredictions.selectSubsetWithStops()
-    allProteinsDB = makeDiamondDB(args.proteins)
+    allProteinsDB = makeDiamondDB(args.proteins, args.threads)
 
     logging.info("Preparing complete alternatives for incomplete predictions.")
     upLorfPredictions = rawPredictions.selectSubsetByClass(["upLORF"])
@@ -850,6 +863,10 @@ def parseCmd():
                         help='Path to folder with ProtHint binary. If not\
                         specified, the program will look for ProtHint in the\
                         $PATH.')
+
+    parser.add_argument('--threads', type=int,
+                        help='Number of threads used by DIAMOND and ProtHint\
+                        By default, all available threads are used.')
 
     args = parser.parse_args()
 
