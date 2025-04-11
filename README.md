@@ -20,7 +20,7 @@ Usage:
 ```
 gmetp.pl --cores 32 --cfg input.cfg
 ```
-Examples of input configuration files can be found at https://github.com/gatech-genemark/GeneMark-ETP-expi  
+Examples of input configuration files can be found at https://github.com/gatech-genemark/GeneMark-ETP-exp 
 
 ## Software license
 
