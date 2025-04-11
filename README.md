@@ -7,7 +7,7 @@ Gene finding in eukaryotic genomes by GeneMark-ETP
 _GeneMark-ETP: Automatic Gene Finding in Eukaryotic Genomes in Consistence with Extrinsic Data_  
 Tomas Bruna, Alexandre Lomsadze, Mark Borodovsky  
 publication in preparation  
-[bioRxiv](https://www.biorxiv.org/content/10.1101/2023.01.13.524024v3)  
+[Genome research]([https://www.biorxiv.org/content/10.1101/2023.01.13.524024v3](https://genome.cshlp.org/content/34/5/757.full))  
 Georgia Institute of Technology, Atlanta, Georgia, USA  
 
 ## Experiments
